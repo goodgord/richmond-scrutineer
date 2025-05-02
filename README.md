@@ -2,7 +2,8 @@
 
 A simple web-based tool to help election scrutineers practice identifying preference flows in Australian preferential voting ballots for the Richmond electorate.
 
-![Screenshot of the practice tool](https://i.imgur.com/placeholder.png) <!-- Replace with an actual screenshot once hosted -->
+![image](https://github.com/user-attachments/assets/7fd39a31-a73b-4e32-af60-0b96839511a2)
+ <!-- Replace with an actual screenshot once hosted -->
 
 ## About This Tool
 
