@@ -18,7 +18,7 @@ This tool was created to help scrutineers prepare for the federal election in th
 
 ## How to Use
 
-1. Visit the [live demo](https://yourusername.github.io/richmond-scrutineer-practice/) or download the HTML file to use offline
+1. Visit the [live demo][(https://goodgord.github.io/richmond-scrutineer/)]() or download the HTML file to use offline
 2. Choose your difficulty level and click "Start Practice"
 3. Analyze the ballot paper and click on which party you think the preferences will flow to
 4. Review your results and explanations
