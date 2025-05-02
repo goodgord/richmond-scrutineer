@@ -1,0 +1,538 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Richmond Scrutineer Practice Tool</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.22.20/babel.min.js"></script>
+  <!-- Use hosted CSS instead of TailwindCSS JIT -->
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/tailwindcss/2.2.19/tailwind.min.css" rel="stylesheet">
+  <style>
+    /* Additional styles for Safari compatibility */
+    .ballot-box {
+      display: flex;
+      align-items: center;
+      margin-bottom: 0.5rem;
+      border-width: 1px;
+      border-style: solid;
+    }
+    
+    .ballot-number {
+      width: 3rem;
+      height: 3rem;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border-right-width: 1px;
+      border-right-style: solid;
+      font-weight: bold;
+    }
+    
+    .ballot-info {
+      padding: 0.5rem;
+    }
+    
+    .candidate-name {
+      font-weight: 600;
+    }
+    
+    .party-name {
+      font-size: 0.875rem;
+    }
+    
+    .btn {
+      font-weight: bold;
+      padding: 0.5rem 1.5rem;
+      border-radius: 0.5rem;
+      display: inline-block;
+      text-align: center;
+    }
+    
+    .btn-blue {
+      background-color: #3B82F6;
+      color: white;
+    }
+    
+    .btn-blue:hover {
+      background-color: #2563EB;
+    }
+    
+    .btn-green {
+      background-color: #10B981;
+      color: white;
+    }
+    
+    .btn-dark-green {
+      background-color: #047857;
+      color: white;
+    }
+    
+    .btn-red {
+      background-color: #EF4444;
+      color: white;
+    }
+    
+    .answer-btn {
+      width: 100%;
+      padding: 0.5rem;
+    }
+    
+    .result-banner {
+      padding: 0.5rem;
+      border-radius: 0.5rem;
+      margin-bottom: 0.5rem;
+    }
+    
+    .result-correct {
+      background-color: #D1FAE5;
+    }
+    
+    .result-incorrect {
+      background-color: #FEE2E2;
+    }
+    
+    .target-highlight {
+      border-color: #FEF08A;
+    }
+    
+    .winner-highlight {
+      border-color: #10B981;
+      border-width: 2px;
+    }
+    
+    .winner-number {
+      border-color: #10B981;
+      background-color: #D1FAE5;
+    }
+  </style>
+</head>
+<body>
+  <div id="root"></div>
+
+  <script type="text/babel">
+    const { useState, useEffect } = React;
+
+    const PreferentialVotingPractice = () => {
+      // Define target parties we care about
+      const TARGET_PARTIES = ["Labor", "Greens", "Nationals"];
+      
+      // Real candidates from Richmond electorate
+      const candidates = [
+        { 
+          name: "NOLAN, Mandy", 
+          party: "THE GREENS", 
+          shortParty: "Greens",
+          color: "darkgreen",
+          isTarget: true
+        },
+        { 
+          name: "ELLIOT, Justine", 
+          party: "LABOR", 
+          shortParty: "Labor",
+          color: "red",
+          isTarget: true
+        },
+        { 
+          name: "LOUGHREY, Kevin", 
+          party: "INDEPENDENT", 
+          shortParty: "Independent",
+          color: "gray",
+          isTarget: false
+        },
+        { 
+          name: "MYE, Ian", 
+          party: "PAULINE HANSON'S ONE NATION", 
+          shortParty: "One Nation",
+          color: "orange",
+          isTarget: false
+        },
+        { 
+          name: "McMAHON, Vivian Mac", 
+          party: "LEGALISE CANNABIS PARTY", 
+          shortParty: "Cannabis Party",
+          color: "purple",
+          isTarget: false
+        },
+        { 
+          name: "PETERKIN, Phillip Byron", 
+          party: "TRUMPET OF PATRIOTS", 
+          shortParty: "Patriots",
+          color: "blue",
+          isTarget: false
+        },
+        { 
+          name: "HONE, Kimberly", 
+          party: "THE NATIONALS", 
+          shortParty: "Nationals",
+          color: "green",
+          isTarget: true
+        },
+        { 
+          name: "WILLIS, Ian Cherry", 
+          party: "LIBERTARIAN", 
+          shortParty: "Libertarian",
+          color: "yellow",
+          isTarget: false
+        },
+        { 
+          name: "McKENZIE, James Ian", 
+          party: "INDEPENDENT", 
+          shortParty: "Independent2",
+          color: "gray",
+          isTarget: false
+        },
+        { 
+          name: "CURTIN, Richard", 
+          party: "GERARD RENNICK PEOPLE FIRST", 
+          shortParty: "People First",
+          color: "teal",
+          isTarget: false
+        }
+      ];
+      
+      // State for current ballot, user answer, correct answer, and score
+      const [currentBallot, setCurrentBallot] = useState(null);
+      const [userAnswer, setUserAnswer] = useState('');
+      const [correctAnswer, setCorrectAnswer] = useState('');
+      const [showAnswer, setShowAnswer] = useState(false);
+      const [score, setScore] = useState({ correct: 0, total: 0 });
+      const [ballotVisible, setBallotVisible] = useState(true);
+      const [timeLeft, setTimeLeft] = useState(5);
+      const [gameActive, setGameActive] = useState(false);
+      const [difficulty, setDifficulty] = useState('easy');
+      const [preferenceOrder, setPreferenceOrder] = useState([]);
+      
+      // Function to determine where preferences flow
+      const determinePreferenceFlow = (ballot) => {
+        // Get candidates in order of preference (1st, 2nd, 3rd, etc.)
+        const candidatesByPreference = [];
+        
+        // Loop through preferences 1-10
+        for (let i = 1; i <= ballot.length; i++) {
+          // Find which candidate has this preference number
+          const candidateIndex = ballot.findIndex(c => c.preference === i);
+          if (candidateIndex !== -1) {
+            candidatesByPreference.push(ballot[candidateIndex].candidate);
+          }
+        }
+        
+        // Store the preference order for display in the result
+        setPreferenceOrder(candidatesByPreference);
+        
+        // Find the first target party in the preference order
+        for (const candidate of candidatesByPreference) {
+          if (TARGET_PARTIES.includes(candidate.shortParty)) {
+            return candidate.shortParty;
+          }
+        }
+        
+        // This should never happen if we have target parties in every ballot
+        return "No target party found";
+      };
+      
+      // Generate a random ballot
+      const generateBallot = () => {
+        // Create a ballot with candidates in fixed ballot paper order
+        // (as shown in the official Richmond ballot image)
+        const ballot = [];
+        
+        // Get random preference numbers (1-10) while ensuring primary vote
+        // never goes to a target party
+        let availablePreferences = Array.from({ length: candidates.length }, (_, i) => i + 1);
+        
+        // First, assign preferences to non-target parties
+        const nonTargetCandidates = candidates.filter(c => !c.isTarget);
+        
+        // Shuffle available preferences for randomization
+        const shuffledPreferences = [...availablePreferences].sort(() => Math.random() - 0.5);
+        
+        // Always ensure preference #1 goes to a non-target party
+        const primaryVoteIndex = Math.floor(Math.random() * nonTargetCandidates.length);
+        const primaryCandidate = nonTargetCandidates[primaryVoteIndex];
+        
+        // Remove the #1 from preferences
+        const remainingPreferences = shuffledPreferences.filter(p => p !== 1);
+        
+        // Create the ballot with the fixed candidate order
+        for (let i = 0; i < candidates.length; i++) {
+          const candidate = candidates[i];
+          
+          if (candidate.name === primaryCandidate.name) {
+            // This is our primary vote candidate
+            ballot.push({
+              candidate: candidate,
+              preference: 1
+            });
+          } else {
+            // Assign a random preference from remaining preferences
+            const prefIndex = Math.floor(Math.random() * remainingPreferences.length);
+            const preference = remainingPreferences[prefIndex];
+            
+            ballot.push({
+              candidate: candidate,
+              preference: preference
+            });
+            
+            // Remove this preference so it's not used again
+            remainingPreferences.splice(prefIndex, 1);
+          }
+        }
+        
+        // Double-check that a target party never got the #1 vote
+        const hasTargetPrimary = ballot.some(item => 
+          item.preference === 1 && item.candidate.isTarget
+        );
+        
+        if (hasTargetPrimary) {
+          console.error("Error: Target party got primary vote!");
+          return generateBallot(); // Try again
+        }
+        
+        // Set the current ballot
+        setCurrentBallot(ballot);
+        
+        // Determine where the preference flows
+        const flowTo = determinePreferenceFlow(ballot);
+        setCorrectAnswer(flowTo);
+        
+        // Setup timer and UI state
+        setBallotVisible(true);
+        setTimeLeft(difficulty === 'easy' ? 10 : (difficulty === 'medium' ? 7 : 4));
+        setShowAnswer(false);
+        setUserAnswer('');
+      };
+      
+      // Check the user's answer directly when clicking a candidate
+      const checkAnswer = (selectedParty) => {
+        setUserAnswer(selectedParty);
+        setBallotVisible(false);
+        setShowAnswer(true);
+        
+        if (selectedParty === correctAnswer) {
+          setScore(prev => ({ 
+            correct: prev.correct + 1, 
+            total: prev.total + 1 
+          }));
+        } else {
+          setScore(prev => ({ 
+            ...prev, 
+            total: prev.total + 1 
+          }));
+        }
+      };
+      
+      // Start the game
+      const startGame = () => {
+        setGameActive(true);
+        setScore({ correct: 0, total: 0 });
+        generateBallot();
+      };
+      
+      // Handle next ballot
+      const nextBallot = () => {
+        generateBallot();
+      };
+      
+      // Timer effect
+      useEffect(() => {
+        let timer;
+        if (ballotVisible && gameActive && timeLeft > 0) {
+          timer = setTimeout(() => {
+            setTimeLeft(prev => prev - 1);
+          }, 1000);
+        } else if (timeLeft === 0 && ballotVisible) {
+          setBallotVisible(false);
+          setShowAnswer(true);
+        }
+        
+        return () => clearTimeout(timer);
+      }, [timeLeft, ballotVisible, gameActive]);
+      
+      return (
+        <div className="p-4 max-w-4xl mx-auto">
+          <h1 className="text-2xl font-bold mb-4">Richmond Election Scrutineer Practice</h1>
+          
+          {!gameActive ? (
+            <div className="bg-gray-100 p-4 rounded-lg mb-4">
+              <h2 className="text-lg font-semibold mb-2">Welcome to Scrutineer Practice!</h2>
+              <p className="mb-2">This tool will help you practice identifying whether a ballot's preferences will flow to the Nationals, the Greens, or Labor.</p>
+              <p className="mb-4 font-medium">For scrutineers: We track preference flows by following the numbers 1, 2, 3... until we reach one of our target parties.</p>
+              
+              <div className="mb-4">
+                <label className="mr-2">Difficulty:</label>
+                <select 
+                  value={difficulty} 
+                  onChange={(e) => setDifficulty(e.target.value)}
+                  className="border p-1 rounded"
+                >
+                  <option value="easy">Easy (10 seconds per ballot)</option>
+                  <option value="medium">Medium (7 seconds per ballot)</option>
+                  <option value="hard">Hard (4 seconds per ballot)</option>
+                </select>
+              </div>
+              
+              <button 
+                onClick={startGame}
+                className="btn btn-blue"
+              >
+                Start Practice
+              </button>
+            </div>
+          ) : (
+            <>
+              {ballotVisible ? (
+                <div className="mb-4">
+                  <div className="flex justify-between items-center mb-2">
+                    <h2 className="text-lg font-semibold">House of Representatives Ballot Paper</h2>
+                    <div className="text-red-500 font-bold">Time: {timeLeft}s</div>
+                  </div>
+                  
+                  <div className="border-2 border-black p-4 bg-gray-50 mb-4 max-w-xl mx-auto">
+                    <div className="text-center font-bold mb-4 border-b-2 border-black pb-2">
+                      OFFICIAL BALLOT PAPER
+                      <div>ELECTORAL DIVISION OF RICHMOND</div>
+                      <div className="text-sm mt-1">House of Representatives</div>
+                    </div>
+                    
+                    <div className="text-sm mb-4 text-center">
+                      Number the boxes from 1 to {candidates.length} in the order of your choice
+                    </div>
+                    
+                    <div>
+                      {currentBallot?.map((item, index) => (
+                        <div 
+                          key={index} 
+                          className={`ballot-box ${item.candidate.isTarget ? 'target-highlight' : 'border-gray-300'}`}
+                        >
+                          <div className="ballot-number border-gray-300">
+                            {item.preference}
+                          </div>
+                          <div className="ballot-info">
+                            <div className="candidate-name">{item.candidate.name}</div>
+                            <div className="party-name">{item.candidate.party}</div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                  
+                  <div className="mb-4 text-center">
+                    <p className="font-semibold mb-2">Click on the party the preference will flow to:</p>
+                    <div className="grid grid-cols-3 gap-2 max-w-xl mx-auto">
+                      <button
+                        onClick={() => checkAnswer("Labor")}
+                        className="btn-red answer-btn"
+                      >
+                        Labor
+                      </button>
+                      <button
+                        onClick={() => checkAnswer("Greens")}
+                        className="btn-dark-green answer-btn"
+                      >
+                        Greens
+                      </button>
+                      <button
+                        onClick={() => checkAnswer("Nationals")}
+                        className="btn-green answer-btn"
+                      >
+                        Nationals
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              ) : (
+                <div className="mb-4">
+                  <h2 className="text-lg font-semibold mb-2">Result</h2>
+                  
+                  <div className={`result-banner ${userAnswer === correctAnswer ? 'result-correct' : 'result-incorrect'}`}>
+                    <div className="flex items-center justify-between">
+                      <p className="font-bold">
+                        {userAnswer === correctAnswer ? 
+                          'Correct!' : 
+                          `Incorrect. You chose ${userAnswer}.`
+                        }
+                      </p>
+                      <p>Flows to: <span className="font-bold">{correctAnswer}</span></p>
+                    </div>
+                  </div>
+                  
+                  <div className="border-2 border-black p-4 bg-gray-50 mb-4 max-w-xl mx-auto">
+                    <div className="text-center font-bold mb-4 border-b-2 border-black pb-2">
+                      OFFICIAL BALLOT PAPER
+                      <div>ELECTORAL DIVISION OF RICHMOND</div>
+                      <div className="text-sm mt-1">House of Representatives</div>
+                    </div>
+                    
+                    <div className="text-sm mb-4 text-center">
+                      Number the boxes from 1 to {candidates.length} in the order of your choice
+                    </div>
+                    
+                    <div>
+                      {currentBallot?.map((item, index) => {
+                        const isWinner = item.candidate.shortParty === correctAnswer;
+                        
+                        return (
+                          <div 
+                            key={index} 
+                            className={`ballot-box ${
+                              isWinner ? 'winner-highlight' : 
+                              item.candidate.isTarget ? 'target-highlight' : 'border-gray-300'
+                            }`}
+                          >
+                            <div 
+                              className={`ballot-number ${
+                                isWinner ? 'winner-number' : 'border-gray-300'
+                              }`}
+                            >
+                              {item.preference}
+                            </div>
+                            <div className="ballot-info">
+                              <div className="candidate-name">{item.candidate.name}</div>
+                              <div className="party-name">{item.candidate.party}</div>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                  
+                  {userAnswer !== correctAnswer && (
+                    <div className="bg-white p-4 rounded-lg border mb-4 max-w-xl mx-auto">
+                      <h3 className="font-semibold text-center mb-2">Preference Flow Explanation</h3>
+                      <ol className="list-decimal list-inside pl-2">
+                        {preferenceOrder.map((candidate, index) => {
+                          const isFirstTargetParty = candidate.isTarget && candidate.shortParty === correctAnswer;
+                          return (
+                            <li key={index} className={`mb-1 ${isFirstTargetParty ? 'bg-yellow-100 p-1 rounded font-bold' : ''}`}>
+                              {candidate.name} ({candidate.party})
+                              {isFirstTargetParty && ' ← First target party in preferences'}
+                            </li>
+                          );
+                        })}
+                      </ol>
+                    </div>
+                  )}
+                  
+                  <div className="mb-4 text-center mt-2">
+                    <p>Score: {score.correct} / {score.total} correct ({Math.round((score.correct / score.total) * 100) || 0}%)</p>
+                    <button
+                      onClick={nextBallot}
+                      className="btn btn-blue mt-2"
+                    >
+                      Next Ballot
+                    </button>
+                  </div>
+                </div>
+              )}
+            </>
+          )}
+        </div>
+      );
+    };
+
+    ReactDOM.render(<PreferentialVotingPractice />, document.getElementById('root'));
+  </script>
+</body>
+</html>
