@@ -19,23 +19,12 @@ This tool was created to help scrutineers prepare for the federal election in th
 
 ## How to Use
 
-1. Visit the [live demo][(https://goodgord.github.io/richmond-scrutineer/)]() or download the HTML file to use offline
+1. Visit the [live demo](https://goodgord.github.io/richmond-scrutineer/) or download the HTML file to use offline
 2. Choose your difficulty level and click "Start Practice"
 3. Analyze the ballot paper and click on which party you think the preferences will flow to
 4. Review your results and explanations
 5. Track your score and improve your accuracy over time
 
-## Understanding Preference Flows
-
-In Australian preferential voting, if no candidate receives more than 50% of first-preference votes, the candidate with the fewest votes is eliminated. Their votes are then distributed to the remaining candidates according to the second preferences shown on those ballots. This process continues until a candidate has more than 50% of votes.
-
-As a scrutineer, your job is to quickly determine which of the three major parties (Labor, Greens, or Nationals) will receive the vote after following the preference chain.
-
-The preference flow logic works like this:
-1. Start with the #1 preference on the ballot
-2. If it's not one of three target parties (Labor, Greens, Nationals), move to #2
-3. Continue following the preference chain until reaching one of the target parties
-4. That's where the preference flows to
 
 ## Downloading and Running Locally
 
